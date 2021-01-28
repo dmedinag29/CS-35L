@@ -1,0 +1,85 @@
+#!/bin/bash
+
+checkdirectory() {    
+	
+	# this portion will first output all files that are bigger than 15 characters
+	find "${dir}" -maxdepth 1 -mindepth 1 2>/dev/null |
+	grep -E '/[^/]{15,}$' |
+        xargs --delimiter="\n" -r ls -pd -1
+
+	#this portion will segragate all files that are within the deseried range, and chcek that all of them are valid
+	find "${dir}" -maxdepth 1 -mindepth 1 2>/dev/null |
+	grep -E '/[^/]{1,14}$' |
+	grep -Ev '/[a-zA-Z_]+[a-zA-Z_\.-]*$' |
+	xargs --delimiter="\n" -r ls -pd -1
+
+	#this portion will segregate all files that are thien the desired range and valid, but will check for duplicates
+	find "${dir}" -maxdepth 1 -mindepth 1 2>/dev/null |
+	grep -E '/[^/]{1,14}$' |
+	grep -E '/[a-zA-Z_]+[a-zA-Z_\.-]*$' |
+	xargs --delimiter="\n" -r ls -pd -1 |
+	sort -f |
+	uniq -iD
+}
+
+#check the number of arguments, places our respective directory in variable x
+if [ $# -gt 2 ]
+then
+    echo "There are too many arguments" 1>&2
+    exit 1
+elif [[ $# -gt 1 ]] && [[ $1 != -r ]]
+then
+    echo "There are too many arguemnts" 1>&2
+    exit 1
+elif [ $# == 0 ]
+then
+    export dir=$(pwd)
+elif [[ $1 == -r ]] && [[ $# == 1 ]]
+then
+    dir=$(pwd)
+    recursive= 'true'
+elif [[ $1 == -r ]] && [[ $# == 2 ]]
+then
+    dir="${2}"
+    recursive='true' 
+else
+    dir="${1}"
+fi
+
+#checks if  directory begins with a dash
+if [[ "${dir}" =~ ^\- ]]
+then
+    echo "Directory begins with -, which is not allowed" 1>&2
+    exit 1
+fi
+
+#this will check if directory exists
+if [[ ! -d "${dir}" ]]
+then 
+    echo "$dir does not exist" 1>&2
+    exit 1
+fi  
+  
+#this will check if our directory is a symbolic link
+if [[ -L "${dir}" ]]
+then
+    echo "$dir is a symbolic link" 1>&2
+    exit 1
+fi
+
+#this will check if we are allowed permission to read such direcoty
+if [[ ! -r "${dir}" ]]
+then
+    echo "No read permission for directoy $dir" 1>&2
+fi
+
+#checks if -r flag was used, if not calls regular command
+if [[ "${recursive}" == 'true' ]]
+then
+    find "${dir}" -type d -exec ./poornames \{\} \;
+else
+    checkdirectory
+fi
+
+
+exit 0

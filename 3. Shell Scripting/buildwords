@@ -1,0 +1,10 @@
+#!/bin/bash
+
+sed -E 's/\?|<u>|<\/u>//g' |
+tr 'A-Z' 'a-z' |
+sed "s/\`/\'/g" |
+sed 's/\-/[:space:]/g' |
+grep -E "[[:space:]]*<td[^>]*>[\'pkmnwlhaeiou[:space:]]*</td>[[:space:]]*"|
+sed -E 's/[[:space:]]*<td[^>]*>|<\/td>[[:space:]]*//g' |
+tr -s '[:space:]' '\n' |
+sort -u
