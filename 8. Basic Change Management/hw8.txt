@@ -1,0 +1,89 @@
+1. Create h8.txt file to write down what we do. (This file!)
+
+2. Command: cd diffutils-orig 
+            git checkout -b quote v3.0
+
+We enter a fresh directory of a version of diffutils that has not been modified. We checkout v3.0, the b flag allows us to create a new branch that did not exist before called quote.
+
+3. Command: patch -p1 < ../quote-3.0-patch.txt
+
+We install the patch that we made from out homework using the patch command, the patch is located in our home directory. This outputs the following:
+
+patching file src/cmp.c
+patching file src/diff.c
+patching file src/diff3.c
+patching file src/dir.c
+patching file src/sdiff.c
+patching file src/util.c
+
+4. C-x 4 a - visits the change log file and creates a new entry unless the most recent  	     entry is for today’s date and our name. It also creates a new item for the 	     current file.
+
+5. Commands: emacs [filename]
+	     C-x 4 a 
+	     "Converted any ` into ' as stated in lab. Comments that contained ` were not 	      changed."
+
+I opened up all the files that were changes with emacs (question 3 for reference), and I used the command learned in question 4, I then stated what I changed. I repeated these commands for every file that is listed in question 3. Opening up the Changelog file we have the following: 
+
+2020-12-03  Daniel Jesus Medina Garate  <classlte@lnxsrv07.seas.ucla.edu>
+
+        * src/util.c: Converted any ` into ' as stated in lab. Comments that contained ` 		      were not chanegd.
+
+        * src/sdiff.c: Converted any ` into ' as stated in lab. Comments that contained ` 		       were not chanegd.
+
+        * src/dir.c: Converted any ` into ' as stated in lab. Comments that contained ` 		     were not chanegd.
+
+        * src/diff3.c: Converted any ` into ' as stated in lab. Comments that contained ` 	               were not chanegd.
+
+        * src/diff.c: Converted any ` into ' as stated in lab. Comments that contained ` 	              were not chanegd.
+
+        * src/cmp.c: Converted any ` into ' as stated in lab. Comments that contained ` 	             were not chanegd.
+
+6. Command: git add -A
+            git commit -F ChangeLog
+
+The first command adds all files that were changed to the staging area, then the second command will commit all of the modified files, the -F flag allows us to use the ChangeLog file as the commit message.
+
+7. Command: git format-patch -1 --stdout > ../formatted-patch.txt
+
+Creates a patch as described in the homework, will be save to our home directory as formatted-patch.txt
+
+8. Command: git clone https://git.savannah.gnu.org/git/diffutils.git diffutils_clone
+            cd diffutils_clone
+            git checkout -b patchery v3.0
+	    git am < ../formatted-patch.txt
+            ./bootstrap
+            patch -p0 < ../diffutils-gets.diff
+            ./configure
+            make         
+
+We first create a clone the repository and we are going to call it diffutils_clone. We enter it and we create a new branch called patchery on v3.0 using the checkout command. We then apply the patch that we created with git, and this is done with the git am command. Finally the rest of the commands are the process for installing our program as we did in the lab portion of the assignment. Note that I downloaded diffutils-gets.diff in my home directory before this (the patch needed since I am on lnxsrv07).
+
+
+Command: make check
+         diff . -
+         diff --help 
+
+We now run make check, we notice that there is a few errors similar to when we did this in the lab, but it does not affect the program. When we run the last two commands we notice that out program works as desired, all ` are replaced with ', and we didn't even have to fix anything by hand when installing our patch!
+
+9. Command: make distdir
+            cd diffutils-3.0.1-119d
+            vim ChangeLog
+
+We make the desired directory as stated in the lab. We then go inside the directory that was created as a result of the previous command. Finally I open the ChangeLog file with vim and we can see that comments that we put in our commit when creating our patch from step 6 are there!
+
+10. For this step, we need to log out of the server and re-login but using the -X flag on ssh to enable port forwarding. I already had Xquartz installed on my machine, so after we log in we call the following commands:
+
+Command: cd ~eggert/src/gnu/emacs
+         gitk
+
+This opens a window of Xquarts, gitk. 
+
+The newsest merge I found that is not newer than 2015-01-25 is:
+
+ merge master
+ Author & Committer: Joakim Verona 
+ Date: 2015-01-24
+
+The top left window shows a tree with all commits, including merges as well. The top middle window shows the author of commit along with their email, the top right window shows the date of the commit.
+
+The lower left window tells the the author, committer, Parent, child, branches, what it follows, and what precedes regarding the commit. The right lower window displays comments and gives us the option to look at the tree. In the middle of both of the top and bottom subwindows we are given a few search options.

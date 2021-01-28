@@ -1,0 +1,263 @@
+1. Command: git clone https://git.savannah.gnu.org/git/diffutils.git
+
+We will get a copy of the diffutils repository, I got the above command from clicking on the Savannah repository link in the lab instructions.
+
+2. Command: cd diffutils
+            git log master > ../git-log.txt
+
+We enter the git repository in order to run the git log command, and we include master so we get a log of changes of the master branch, and we then save it to a library saved at our home directory called git-log.txt.
+
+3. Command: git tag > ../git-tags.txt
+
+Generates a list of tags used for diffutils and it is saved in a file named git-tags.txt, which is saved in our home directory.
+
+4. Command: cd ..
+            emacs git-log.txt
+            [C-s] maint: quote
+
+After typing the command above, we find that the described commit is:
+
+	commit 62ca21c8c1a5aa3488589dcb191a4ef04ae9ed4f
+
+Command: Exit Emacs
+         cd diffutils
+         git format-patch -1 62ca21c8c1a5aa3488589dcb191a4ef04ae9ed4f --stdout > quote-patch.txt
+
+We exit emacs, then enter the repository, and the third command will create the patch for the commit mentioned above in our home directory.
+
+5. Command: git checkout v3.0
+
+We use the command to switch our head pointed to v3.0, as stated in the lab instructions. This returns the following: 
+
+Note: checking out 'v3.0'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by performing another checkout.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -b with the checkout command again. Example:
+
+  git checkout -b new_branch_name
+
+HEAD is now at 022cd5c... version 3.0
+
+6. Command: patch -p1 < ../quote-patch.txt
+
+We go ahead and apply the patch, which three times is not able to figure out what file to patch. I hit RETURN every time as stated in the lab instructions, and we can see specifics hunks failed to have the patch installed. These are the following:
+
+patching file README
+Hunk #1 FAILED at 9.
+Hunk #3 FAILED at 60.
+2 out of 3 hunks FAILED -- saving rejects to file README.rej
+
+patching file README-hacking
+Hunk #1 FAILED at 19.
+1 out of 1 hunk FAILED -- saving rejects to file README-hacking.rej
+
+patching file cfg.mk
+Hunk #1 FAILED at 29.
+1 out of 1 hunk FAILED -- saving rejects to file cfg.mk.rej
+
+
+patching file src/diff.c
+Hunk #10 FAILED at 876.
+Hunk #11 FAILED at 906.
+Hunk #12 FAILED at 942.
+3 out of 14 hunks FAILED -- saving rejects to file src/diff.c.rej
+
+patching file src/diff3.c
+Hunk #6 FAILED at 433.
+1 out of 9 hunks FAILED -- saving rejects to file src/diff3.c.rej
+
+7. Command: git status
+
+The command above will tell us what files have been changed since our last commit, which outputs the following:
+
+# HEAD detached at v3.0
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   NEWS
+#	modified:   README
+#	modified:   TODO
+#	modified:   doc/diagmeet.note
+#	modified:   ms/config.bat
+#	modified:   ms/config.site
+#	modified:   po/en.po
+#	modified:   src/analyze.c
+#	modified:   src/cmp.c
+#	modified:   src/context.c
+#	modified:   src/diff.c
+#	modified:   src/diff.h
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/ifdef.c
+#	modified:   src/io.c
+#	modified:   src/sdiff.c
+#	modified:   src/side.c
+#	modified:   src/system.h
+#	modified:   src/util.c
+#	modified:   tests/help-version
+#
+# Untracked files:
+#   (use "git add <file>..." to include in what will be committed)
+#
+#	NEWS.orig
+#	README-hacking.orig
+#	README-hacking.rej
+#	README.orig
+#	README.rej
+#	cfg.mk.orig
+#	cfg.mk.rej
+#	ms/config.site.orig
+#	src/cmp.c.orig
+#	src/context.c.orig
+#	src/diff.c.orig
+#	src/diff.c.rej
+#	src/diff.h.orig
+#	src/diff3.c.orig
+#	src/diff3.c.rej
+#	src/dir.c.orig
+#	src/sdiff.c.orig
+#	src/system.h.orig
+#	src/util.c.orig
+#	tests/help-version.orig
+no changes added to commit (use "git add" and/or "git commit -a")
+
+The tracked files are the files that have been modified from installing our patch, we can see most of them are in the src directory. Now the untracked files are files that were made directly from the patching process, we can see that the rejects from the failed hunks patching process our under the list of untracked files.
+
+8. vc-diff: displays a diff which compares each work file in the current VC fileset to the 	    version(s) from which we started editing, so in our case it would create a diff 	    file that shows the differences between our patched and unpatched files.
+
+   vc-reset: reverts the work file(s) in the current VC fileset to the last revision, so in our 	     case it would revert to the unpatched version.
+   
+   diff-apply-hunk: Applies hunk to its target file .With a prefix argument of C-u, reverts 		    this hunk, changing the new version to the unpatched version of the hunk.
+   
+   diff-goto-source: Go to the source file and line corresponding to this hunk (diff-goto-		     source). 
+
+9. First we want to revert all of the files that we not .c, we can see from 7) that these are the following files: 
+
+   NEWS
+   README
+   TODO
+   doc/diagmeet.note
+   ms/config.bat
+   ms/config.site
+   po/en.po
+   src/diff.h
+   src/system.h
+   tests/help-version
+
+Command: emacs NEWS
+         C-x v u
+
+We will do this for all of the files stated above.
+
+Command: git status
+
+Running this command again, we can see that the patch now was only applied to .c files, the command outputs this portion for the "tracked files":  
+
+#	modified:   src/analyze.c
+#	modified:   src/cmp.c
+#	modified:   src/context.c
+#	modified:   src/diff.c
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/ifdef.c
+#	modified:   src/io.c
+#	modified:   src/sdiff.c
+#	modified:   src/side.c
+#	modified:   src/util.c
+
+We now want to undo all changes to these files other than changes to character string constannts. 
+
+Commands: emacs src/analyze.c 
+          C-x v = 
+          C-u C-c C-a
+          C-x C-c
+
+The first command opens emacs for our respective .c file, the second opens a diff file, and the third command will revert the hunk. We will go through all of the .c file undoing all unessarry changes using the second command and scrolling through the diff window. The third command closes emacs. We will save every time we close emacs and then move onto the next .c file and repeat the process. Once we finishing undoing all changes that were not necessary in our .c files, we run once again [git status] to see which files were ultimately affected by our patch:
+
+#	modified:   src/cmp.c
+#	modified:   src/diff.c
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/sdiff.c
+#	modified:   src/util.c
+
+10. Command: ls src/*.c.rej
+
+This command gives us the rejected patches which are:
+	src/diff3.c.rej  
+	src/diff.c.rej
+
+Command: emacs src/diff.c.rej src/diff.c
+         C-s ` (As many times necessary)
+         emacs src/diff3.c.rej src/diff3.c
+         C-s ` (As many times necessary)
+
+The first command will open both of the respective files, we can see in diff.c that for some reason the line number in diff.c.rej does not match with the ones in diff.c, so we will manually look for any ` using C-s and change it to '. We will only do this for characters thet are NOT comments, as we want to make our patch as conservative as possible. We then repeat this for diff3.c.
+
+11. Command: git clean -f
+
+We use this command to remove all untracked files that git status in 7) warned us about. This successfully removes all the files.
+
+12. Command: git status
+
+This outputs the 6 files the lab was talking about:
+
+#	modified:   src/cmp.c
+#	modified:   src/diff.c
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/sdiff.c
+#	modified:   src/util.c
+
+Command: git diff > ../quote-3.0-patch.txt
+
+As stated in the lab, we run git diff and save it to quote-3.0-patch.txt in our home directory. Lets check if its indeed 300-400 lines long by running in our home directory the following:
+
+Command: cat quote-3.0-patch.txt | wc -l
+
+The above command returns 326 as desired.
+
+13. Command: ./bootstrap 
+             wget  https://web.cs.ucla.edu/classes/fall20/cs35L/assign/diffutils-gets.diff
+             patch -p0 < diffutils-gets.diff
+             ./configure
+             make
+
+I am on lnxsrv07 so I will have to run bootstrap and then install the patch. The second command downloads the patch, the third installs it. Then we can call the usual commands that we do when we want to build a program. We will check that it works by running the following: 
+
+Command: diff . -
+         diff --help
+
+The first command returns:
+
+diff: cannot compare '-' to a directory
+
+Which we can see that our program works as desired as ' is outputted instead of `. The also check to make sure that the second command does not output any `, which it doesn't and uses ' instead.
+
+14. Comamand: cd ..
+    	      mkdir diffutils-3.0
+              mkdir diffutils-3.0-patch
+              cd diffutils
+	      cd src
+              cp ./*.c ~/diffutils-3.0-patch
+
+We first create our two directories in our home library, we then enter diffutilis, then enter src where the source code it located, and we copy all .c files of our patched diffutils into its corresponding directory. Now lets get the source code for the original diffutils.
+
+   Command: cd ~ 
+            git clone https://git.savannah.gnu.org/git/diffutils.git diffutils-orig
+            cd diffutils-orig
+            git checkout v3.0
+            cp ./*.c ~/diffutils-3.0     
+
+We now want to compare the source code in both directories, so we run the following:
+
+   Command: ./diffutils/src/diff -pru diffutils-3.0 diffutils-3.0-patch >quote-3.0-test.txt
+
+15. Command: diff quote-3.0-test.txt quote-3.0-patch.txt
+
+Looking at the output, we can see that the files are in fact different. But taking a closer look, we can see that the differences are only due to two things: the first is the simple ` that we replaces with '. The second is difference in file paths and names, so we can conclude that the differences are innocuous as they do not harm the program. 
