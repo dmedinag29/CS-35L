@@ -1,0 +1,291 @@
+1. I will use the command [vim tr2b.c] to create such file that uses getchars and put char. I figured out the way to pass arguments, which is using argc which represents the size and argv[] which is an array that stores all arguments that are passed. I created an if condition to check is there is a valid number of arguments passed. I then created another if statement that checks if the two arguments passed are of equal string length. I then created a for loop to check if the from string has any duplicate bytes. Finally I use a while loop that stops once out input reaches EOF, which stands for end of file. Within this while loop we place a for loop that checks if the current character passed matches any in our from string, if it does it outputs its respective replacement from the to string, if it doesn't the current character is simply outputted. Outputs are done using putchar().
+
+2. We will create such file using the command [cp tr2b.c tr2u.c], which copies the file that we made in part 1). The easiest way to do this is simply changing every use of getchar() with the read system call and put char with the write system call. Now we can't use EOF as the boolean of our while loop so we will use the value that read returns so our program knows when to exit such while loop. If the read call returns 0, then this means we have reached the end of our file. For the most part, everything stays the same.
+
+3. Command: dd if=/dev/zero of=file bs=5000K count=1
+
+This command will create a file names file, once we run this command we get a message in the terminal saying that our file is 5120000 bytes. 
+
+a)
+
+Command: strace -c ./tr2b cow pig < file > file_output.txt
+
+
+We will use these trace command to compare systems calls, and the flag c will limit the output to things such as system calls, errors, and time taken. We will first do it when coping to another file, which in this case is file_output.txt. The command outputs the following: 
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 65.68    0.000442           1       625           write
+ 34.32    0.000231           0       627           read
+  0.00    0.000000           0         2           open
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         4           fstat
+  0.00    0.000000           0         9           mmap
+  0.00    0.000000           0         4           mprotect
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000673                  1278         1 total
+
+
+We can see that there is a total of 1278 system calls. Now we will try this again but using our tr2u program
+
+
+Command: strace -c ./tr2u cow pig < file > file_output.txt
+
+We will run the same command, but this time on out tr2u program that uses systems calls explicitly. We get the following output: 
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 55.08   22.709902           4   5120000           write
+ 44.92   18.519771           4   5120002           read
+  0.00    0.000046           7         7           mmap
+  0.00    0.000036           9         4           mprotect
+  0.00    0.000016           8         2           open
+  0.00    0.000012          12         1           munmap
+  0.00    0.000009           5         2           fstat
+  0.00    0.000009           9         1         1 access
+  0.00    0.000008           4         2           close
+  0.00    0.000003           3         1           arch_prctl
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         1           execve
+------ ----------- ----------- --------- --------- ----------------
+100.00   41.229812              10240024         1 total
+
+
+We can see now that there is a total of 10240024 system calls, which makes sense since this command took much longer than the previous one. This is because tr2u will make system calls every single time it needs to when going through our very large file. Our previous program of tr2b on the other hand will buffer the read and write calls automatically to make many less expensive calls than tr2u.
+
+
+b)
+
+We will now similarly do the same thing as in part a), but we will output the file to terminal instead of coping it.
+
+Command: strace -c ./tr2b cow pig < file
+
+We run our tr2b program which uses getchar() and putchar() but the file is instead copied to the terminal, we get the following output:
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 91.35    0.008335           2      5000           write
+  8.65    0.000789           1       627           read
+  0.00    0.000000           0         2           open
+  0.00    0.000000           0         2           close
+  0.00    0.000000           0         4           fstat
+  0.00    0.000000           0         9           mmap
+  0.00    0.000000           0         4           mprotect
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           brk
+  0.00    0.000000           0         1         1 access
+  0.00    0.000000           0         1           execve
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.009124                  5653         1 total
+
+We can see that coping to terminal takes a bit more calls than copying to another file, as we have 5653 calls in this case. This is most likely due to it being easier to copy to a file than it is to the terminal as the terminal most likely requires more write calls compared to simply coping to the terminal. Now lets try this with our tr2u program.
+
+
+Command: strace -c ./tr2u cow pig < file
+
+This command is the same as before but we are now using our tr2u program which uses read and write system calls instead of putchar() and getchar(). It is safe to assume that it will take much longer than our other program since this is what we saw in part a). The command outputs the following: 
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 56.72   25.516666           5   5120000           write
+ 43.28   19.468831           4   5120002           read
+  0.00    0.000046           7         7           mmap
+  0.00    0.000035           9         4           mprotect
+  0.00    0.000016           8         2           open
+  0.00    0.000011          11         1           munmap
+  0.00    0.000009           9         1         1 access
+  0.00    0.000008           4         2           close
+  0.00    0.000007           4         2           fstat
+  0.00    0.000007           7         1           execve
+  0.00    0.000004           4         1           brk
+  0.00    0.000004           4         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00   44.985644              10240024         1 total
+
+We can see that it is the same as part a) where we copied to a file. This is probably because we are already using system calls in part a) implicitly and here there are used for the terminal, so the total system calls are the same.
+
+
+
+
+4. We will now use time command to check how much faster one program is than another when copying the same amount of date in our 'file' file of 5 millions bytes.
+
+Command: time ./tr2b cow pig < file > file_output.txt
+
+This outputs the following:
+
+real	0m0.266s
+user	0m0.212s
+sys	0m0.010s
+
+Now we will do the same command except on our tr2u program which most likely take longer since we have more expensive systems calls.
+
+Command: time ./tr2u cow pig < file > file_output.txt
+
+real	0m13.254s
+user	0m3.650s
+sys	0m9.559s
+
+We can see clearly that this program takes much longe than the one that uses getchar() and putchar() instead. Now we will repeat this commands but copy the data to the terminal instead into another file.
+
+Command: time ./tr2b cow pig < file
+
+This outputs the following:
+
+real	0m8.472s
+user	0m0.253s
+sys	0m0.033s
+
+We can see that this takes a bit more than copying to another file, which is probably since copying to terminal requires more system calls than simply coping to another file. Nonetheless it still takes much less then then we use tr2u copying the data to another file. We will now check the time it takes tr2u to copy to the terminal, which will probably be the same as copying to another file since we are already strictly using system calls.
+
+Command: time ./tr2u cow pig < file
+
+real	0m14.024s
+user	0m3.689s
+sys	0m8.647s
+
+We can see that we have very similar times as using this same program but copying to the file instead. It probable takes a little longer since copying to the terminal is more complex than copying to another file.
+
+We can conclude that the program that strictly uses system calls takes 10-50x longer than the one that uses getchar() and putchar(). This makes since as putchar() and getchar() will buffer the results to make less system calls which are quite expensive on our machine.
+
+--------------------------------------------------------------------------------------------------
+
+Homework analysis
+
+
+I created a a program that creates four files with the line given in the previous assignment, so we have the following files:
+
+     filew0       - 0 lines
+     filew100     - 100 lines
+     filew10000   - 10000 lines
+     filew1000000 - 1000000 lines
+
+We will now run the time command on both strob and strobu programs with the files above, including with the flag -f. This results in the following: 
+
+time ./sfrob < filew0
+
+real	0m0.002s
+user	0m0.000s
+sys	0m0.002s
+
+time ./sfrob < filew100
+
+real	0m0.003s
+user	0m0.001s
+sys	0m0.001s
+
+time ./sfrob < filew10000
+
+real	0m0.092s
+user	0m0.078s
+sys	0m0.008s
+
+time ./sfrob < filew1000000
+
+real	2m4.873s
+user	0m10.662s
+sys	0m0.847s
+
+time ./sfrob -f < filew0
+
+real	0m0.003s
+user	0m0.000s
+sys	0m0.001s
+
+time ./sfrob -f < filew100
+
+real	0m0.003s
+user	0m0.002s
+sys	0m0.000s
+
+time ./sfrob -f < filew10000
+
+real	0m0.091s
+user	0m0.079s
+sys	0m0.007s
+
+time ./sfrob -f < filew1000000
+
+real	3m41.864s
+user	0m10.442s
+sys	0m0.882s
+
+time ./sfrobu < filew0
+
+real	0m0.002s
+user	0m0.001s
+sys	0m0.000s
+
+time ./sfrobu < filew100
+
+real	0m0.015s
+user	0m0.005s
+sys	0m0.010s
+
+time ./sfrobu < filew10000
+
+real	0m1.345s
+user	0m0.444s
+sys	0m0.898s
+
+time ./sfrobu < filew1000000
+
+real	3m26.801s
+user	0m45.602s
+sys	1m30.262s
+
+time ./sfrobu -f < filew0
+
+real	0m0.003s
+user	0m0.001s
+sys	0m0.000s
+
+time ./sfrobu -f < filew100
+
+real	0m0.016s
+user	0m0.006s
+sys	0m0.009s
+
+time ./sfrobu -f < filew10000
+
+real	0m1.447s
+user	0m0.557s
+sys	0m0.887s
+
+time ./sfrobu -f < filew1000000
+
+real	3m8.830s
+user	0m55.669s
+sys	1m30.612s
+
+From our results above, we can see that strob is almost always faster that sfrobu. But the differences are almost negligible when we have smaller files. For example for files where we have between 0-100 lines, there isn't really any significant time difference between the two programs. But for the file where we have 10,000 lines, strob is quite faster than strobu, almost over 100 times faster. Now when we have a million lines, the difference between strob and sfrobu is also quite noticeable. This was expected, as we have seen in the lab that making system calls instead of simply using getchar() and putchar() is almost more expensive. This is because putchar and getchar are part of I/O buffer that strategically buffers what we need in order to make less system calls. As we can see these system calls such as read and write are quite expensive and time consuming.
+
+We will now uses strace on strobu with varying file sizes to be able to determine what system cakes are used to allocate/reallocate memory. The following are used: 
+
+int brk(void *addr);
+
+void *sbrk(intptr_t increment);q:qq
+
+       -brk, sbrk - change data segment size
+     
+       
+       
+void *mremap(void *old_address, size_t old_size,
+                    size_t new_size, int flags, ... /* void *new_address */);
+       -remap a virtual memory address
+
+
+
+void *mmap(void *addr, size_t length, int prot, int flags,
+                  int fd, off_t offset);
+int munmap(void *addr, size_t length);
+
+       -mmap, munmap - map or unmap files or devices into memory
+
+
+The usage of brk() and mmap() are called upon more when the file size increases, so it is safe to assume that these system calls are used by sfrobu to allocae/reallocate memory!
