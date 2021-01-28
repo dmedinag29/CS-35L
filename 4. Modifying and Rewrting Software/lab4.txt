@@ -1,0 +1,62 @@
+# I first create the la shell script that is given to using the assignment. I run la -A to see if the problem is still persistent, which it is.
+
+1. We need to verify the compressed tarball and verify its signature with the GNU keyring. We will download the files and then running the specified shell command:
+	wget ftp://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz
+	wget ftp://ftp.gnu.org/gnu/coreutils/coreutils-8.29.tar.xz.sig
+	wget https://ftp.gnu.org/gnu/gnu-keyring.gpg
+	gpg --verify --keyring ./gnu-keyring.gpg coreutils-8.29.tar.xz.sig
+
+The output states that we have a good signature, but we are given a warning that the key is not certified with a trusted signature. This means that we don't know if that signature was truly from its original owner. This may be because the gpg has not verified the with the owner regarding this public key. 
+
+2. Command: tar -xJvf coreutils-8.29.tar.xz
+#will uncompress our coreutils file, -x extracts the tarball, -f specifies the files name, -J filters our archive, -v gives us a verbose output
+
+
+Command: mv coreutils-8.29 Coreutilistemp/coreutils-8.29
+Created a new directory called Coreutilis and moved our uncompressed filed there.
+
+
+Command: cd Coreutilistemp
+         cd coreutils-8.29
+Takes us into the uncompressed folder, we now want to instal it into our directory we created.
+
+
+Command: ./configure --prefix=/u/eng/class/classlte/Coreutilistemp/
+	 make
+	 install
+This sequence of commands will install coreutils to our directory.
+
+
+Command: cd ..
+	 ls
+We are now in the directory we created, we can see that now we also have bin, libexc, and share
+
+3. Command: cd bin
+	    mkdir foo
+	    cd foo
+	    \ls -fA
+We go into bin, and then reproduce the bug on our machine which is using the unmodified version of coreutils. We can see now that the issue still persists, as . and .. are still outputted.
+
+4. Command: cd ..
+            cd coreutilis-8.29 
+	    vim bug_patch #I pasted the text into this file
+	    patch -p1 < bug_patch
+
+This will download our patch to our coreutilis-8.29 folder, and then installs that patch
+By calling the patch command -p1, which allows the patch function to assume we are already in the directory with the file/src in it. This outputs the following:
+
+	patching file NEWS
+	Hunk #1 FAILED at 4.
+	1 out of 1 hunk FAILED -- saving rejects to file NEWS.rej
+	patching file src/ls.c
+	Hunk #1 succeeded at 1900 (offset -3 lines).
+	patching file tests/local.mk
+	patching file tests/ls/a-option.sh
+5. Command: make 
+	    autoreconf -fi
+	    make
+When we first run make, we get an error. Looking at the hints posted, it stated that if we got an error to run autoreconf -fi and then run make again. By doing this, we are successful. I believe the reason that we had to run the second line is because the patch changes multiple files and thus these changes need to be applied everywhere, so the second command does this wherever needed.
+
+6. Command: cd src
+            ./ls -a -A
+We have to make sure we are calling the new patched version of our command, which the lines above do. After executing the last line, nothing is outputted so we can see that we were successful!

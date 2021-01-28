@@ -1,0 +1,40 @@
+1. It is safe to assume that the performance will actually improve. If we look at the patch, we can see that an if statement is removed, so just this will make performance faster. Additionally, we can check the time it takes to run both of these command, which is done by calling the command time [command], and we can see that our new patched version is .001 faster.
+
+2. One problem that the company could run into if they adopted the patch is using the same command but for different purposes. In this new version, the A will override the a, which maybe something that we dont desire depending on what our goal is. There would be no way to revert this, so the company may face issues when they do want the "." or ".." Directories to appear. Another issue that could arise is that there was a few errors that were outputted in part 4). This could have changed some files or lead to unintended behavior that could cause trouble later down the road.
+
+3. When we run the script randline.py on the empty file /dev/nul, we get the following output to our terminal:
+
+	Traceback (most recent call last):
+  	File "./randline.py", line 70, in <module>
+    	  main()
+  	File "./randline.py", line 64, in main
+    	  sys.stdout.write(generator.chooseline())
+  	File "./randline.py", line 34, in chooseline
+    	  return random.choice(self.lines)
+  	File "/usr/lib64/python2.7/random.py", line 274, in choice
+    	  return seq[int(self.random() * len(seq))]  # raises IndexError if seq is empty
+	IndexError: list index out of range
+
+Now we know that the landline.py script is supposed to return a random line from the file given, and since the file we gave it is empty, it gives us an error. We can see from the traceback the the choose line command is called, but there is no lines so nothing is then passed to random.choice(). But this is not allowed, as it can not be empty, which we see in the following lines of the traceback that seq is empty and thus out of range.
+
+4. We can call the script with python3 by calling the following command:
+	python3 ./randline.py /dev/null
+
+This outputs the following error:
+
+File "/w/home.19/class/classlte/./randline.py", line 65
+    except IOError as (errno, strerror):
+                      ^
+SyntaxError: invalid syntax
+
+The reason for this is because python3 does not allow multiple parameters to be passed to an exception. In this case, we are passing both errno and strerror, so this is invalid syntax in python3. This is called automatic tuple packing, which is not supported in python3.
+
+5. Command: python ./shuf.py
+When we try running our script, we get the following error:
+
+File "./shuf.py", line 43
+    print(self.shuffledl, sep = '', end = '')
+                              ^
+SyntaxError: invalid syntax
+
+Unfortunately, it seems that python has a more limited functionality when it comes to the print function, so our script in this case is not backward compatible. If we wished too, we could edit our script to not include this, which would probably involving editing the way we create our lists as simply removing this functionality from the print function will cause it mess up the syntax.
