@@ -1,0 +1,233 @@
+1. Command: wget https://web.cs.ucla.edu/classes/fall20/cs35L/assign/simpgmp.c
+            gcc -lgmp simpgmp.c -o simpgmp
+
+The first command is used to download the simpgmp.c file that we want to compile. The second command compiles it into an executable called simpgmp but we use the flag -lgmp as stated in the instructions. 
+
+2. Command: ./simpgmp 24
+            ./simpgmp 16777216
+            ./simpgmp 16777216 | less
+            ./simpgmp 16777216 | wc -m
+
+The first command will return return 16777216, which I checked on an online calculator and is correct. The second command is essentially 2**(2**24), which outputs a very large number, and I verified that the last four digits are 7536. The third command will output one page at a time, which I use to verify that in fact the first four digits are "1818". We use the fourth command to check how many characters are outputted which is in fact 5,050,446.
+
+3. Command: ldd simpgmp
+
+This command was given to use in the lab, which I looked up and it returns the libraries used. It outputted the following:
+
+        linux-vdso.so.1 =>  (0x00007ffea854a000)
+	libgmp.so.10 => /lib64/libgmp.so.10 (0x00007fdc3797b000)
+	libc.so.6 => /lib64/libc.so.6 (0x00007fdc375ad000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fdc37bf3000)
+
+We can see that there is four dynamic libraries.
+
+4. Command: strace -c ./simpgmp 12345
+
+This command will return a summary of what the program simpgmp will call as well as time and total system calls. I simply ran it with a random number, which outputs the following:
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 27.23    0.000113          11        10           mmap
+ 21.20    0.000088          15         6           mprotect
+ 10.84    0.000045          15         3           open
+  7.71    0.000032           8         4           brk
+  6.75    0.000028          28         1           execve
+  6.02    0.000025          25         1           munmap
+  5.54    0.000023           6         4           fstat
+  5.06    0.000021           7         3           close
+  4.58    0.000019          10         2           read
+  3.37    0.000014          14         1         1 access
+  1.69    0.000007           7         1           arch_prctl
+  0.00    0.000000           0         2           write
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000415                    38         1 total
+
+
+From the previous lab we know that mmap, brk, munmap, read, write are all related to dynamic memory allocation as well as I/O buffering. I willl use man [syscall] to check what the rest of the system calls do:
+
+	-mprotect() changes protection for the calling process's memory page(s) containing 		any part of the address range in the interval
+
+	-execve()  executes  the  program  pointed to by filename
+
+	-fstat() retrieve information about a file
+
+	-access() checks whether the calling process can access the file
+
+	-close()  closes  a  file  descriptor
+
+	-arch_prctl() sets architecture-specific thread state by selecting a sub function and          	passes argument address to it 
+
+5. Command: ls /usr/bin | awk '(NR-204971333)%251 == 0'
+
+The command returns the following:
+
+chattr
+eu-addr2line
+gst-launch
+kde4
+mailq
+orbd
+ps2ps2
+smbspool
+vim
+
+6. Command: ldd /usr/bin/chattr
+	    ldd /usr/bin/eu-addr2line
+            ldd /usr/bin/gst-launch
+	    ldd /usr/bin/kde4
+	    ldd /usr/bin/orbd
+	    ldd /usr/bin/ps2ps2
+	    ldd /usr/bin/smbspool
+	    ldd /usr/bin/vim
+	    ldd /usr/bin/mailq         
+
+
+
+We get the error message "not a dynamic executable" from the following calls: 
+		ldd /usr/bin/kde4
+                ldd /usr/bin/ps2ps2
+
+This is most likely because these commands do not have any shared library dependencies, in other words, this commands most likely use static linking and have all the code they need within themselves. The other executables on the other hand have references within their code to shared libraries. 
+
+7.      Command: vim week7
+                  ----------------------------------------------------
+			#!/bin/bash
+
+			ldd /usr/bin/chattr
+			ldd /usr/bin/eu-addr2line
+			ldd /usr/bin/gst-launch
+			ldd /usr/bin/kde4
+			ldd /usr/bin/orbd
+			ldd /usr/bin/ps2ps2
+			ldd /usr/bin/smbspool
+			ldd /usr/bin/vim
+			ldd /usr/bin/mailq
+                   --------------------------------------------------
+                  chmod +x week7
+                 ./week7 | grep so | sed s/'([^()]*)'// | sort -u        
+        
+I created a script called week7, where I called ldd on all of the commands that were given to us. The second command I changed the permission so I was able to run the script. The third command does the following: calls the script that we made in the first command, makes sure not to output any error messages and prints all output in separate lines, the sed makes sure to remove the addresses from the libraries so we are able to sort it and remove he duplicates, which is what the last part does. The following is the output of all of the libraries used sorted:
+
+	/lib64/ld-linux-x86-64.so.2 
+	libacl.so.1 => /lib64/libacl.so.1 
+	libaddns-samba4.so => /usr/lib64/samba/libaddns-samba4.so 
+	libaesni-intel-samba4.so => /usr/lib64/samba/libaesni-intel-samba4.so 
+	libasn1util-samba4.so => /usr/lib64/samba/libasn1util-samba4.so 
+	libattr.so.1 => /lib64/libattr.so.1 
+	libauthkrb5-samba4.so => /usr/lib64/samba/libauthkrb5-samba4.so 
+	libbz2.so.1 => /lib64/libbz2.so.1 
+	libcap.so.2 => /lib64/libcap.so.2 
+	libCHARSET3-samba4.so => /usr/lib64/samba/libCHARSET3-samba4.so 
+	libcliauth-samba4.so => /usr/lib64/samba/libcliauth-samba4.so 
+	libcli-cldap-samba4.so => /usr/lib64/samba/libcli-cldap-samba4.so 
+	libcli-ldap-common-samba4.so => /usr/lib64/samba/libcli-ldap-common-samba4.so 
+	libcli-nbt-samba4.so => /usr/lib64/samba/libcli-nbt-samba4.so 
+	libcli-smb-common-samba4.so => /usr/lib64/samba/libcli-smb-common-samba4.so 
+	libcom_err.so.2 => /lib64/libcom_err.so.2 
+	libcommon-auth-samba4.so => /usr/lib64/samba/libcommon-auth-samba4.so 
+	libcrypto.so.10 => /lib64/libcrypto.so.10 
+	libcrypt.so.1 => /lib64/libcrypt.so.1 
+	libc.so.6 => /lib64/libc.so.6 
+	libdb-5.3.so => /lib64/libdb-5.3.so 
+	libdbwrap-samba4.so => /usr/lib64/samba/libdbwrap-samba4.so 
+	libdl.so.2 => /lib64/libdl.so.2 
+	libdw.so.1 => /lib64/libdw.so.1 
+	libe2p.so.2 => /lib64/libe2p.so.2 
+	libelf.so.1 => /lib64/libelf.so.1 
+	libflag-mapping-samba4.so => /usr/lib64/samba/libflag-mapping-samba4.so 
+	libfreebl3.so => /lib64/libfreebl3.so 
+	libgcc_s.so.1 => /lib64/libgcc_s.so.1 
+	libgcrypt.so.11 => /lib64/libgcrypt.so.11 
+	libgenrand-samba4.so => /usr/lib64/samba/libgenrand-samba4.so 
+	libgensec-samba4.so => /usr/lib64/samba/libgensec-samba4.so 
+	libglib-2.0.so.0 => /lib64/libglib-2.0.so.0 
+	libgpg-error.so.0 => /lib64/libgpg-error.so.0 
+	libgpm.so.2 => /lib64/libgpm.so.2 
+	libgse-samba4.so => /usr/lib64/samba/libgse-samba4.so 
+	libgssapi_krb5.so.2 => /lib64/libgssapi_krb5.so.2 
+	libhesiod.so.0 => /lib64/libhesiod.so.0 
+	libidn.so.11 => /lib64/libidn.so.11 
+	libinterfaces-samba4.so => /usr/lib64/samba/libinterfaces-samba4.so 
+	libiov-buf-samba4.so => /usr/lib64/samba/libiov-buf-samba4.so 
+	libjansson.so.4 => /lib64/libjansson.so.4 
+	libjli.so => not found
+	libk5crypto.so.3 => /lib64/libk5crypto.so.3 
+	libkeyutils.so.1 => /lib64/libkeyutils.so.1 
+	libkrb5samba-samba4.so => /usr/lib64/samba/libkrb5samba-samba4.so 
+	libkrb5.so.3 => /lib64/libkrb5.so.3 
+	libkrb5support.so.0 => /lib64/libkrb5support.so.0 
+	liblber-2.4.so.2 => /lib64/liblber-2.4.so.2 
+	libldap-2.4.so.2 => /lib64/libldap-2.4.so.2 
+	libldbsamba-samba4.so => /usr/lib64/samba/libldbsamba-samba4.so 
+	libldb.so.1 => /lib64/libldb.so.1 
+	liblibsmb-samba4.so => /usr/lib64/samba/liblibsmb-samba4.so 
+	liblz4.so.1 => /lib64/liblz4.so.1 
+	liblzma.so.5 => /lib64/liblzma.so.5 
+	libmessages-dgm-samba4.so => /usr/lib64/samba/libmessages-dgm-samba4.so 
+	libmessages-util-samba4.so => /usr/lib64/samba/libmessages-util-samba4.so 
+	libMESSAGING-SEND-samba4.so => /usr/lib64/samba/libMESSAGING-SEND-samba4.so 
+	libmsghdr-samba4.so => /usr/lib64/samba/libmsghdr-samba4.so 
+	libm.so.6 => /lib64/libm.so.6 
+	libndr-krb5pac.so.0 => /lib64/libndr-krb5pac.so.0 
+	libndr-nbt.so.0 => /lib64/libndr-nbt.so.0 
+	libndr-samba-samba4.so => /usr/lib64/samba/libndr-samba-samba4.so 
+	libndr.so.0 => /lib64/libndr.so.0 
+	libndr-standard.so.0 => /lib64/libndr-standard.so.0 
+	libnsl.so.1 => /lib64/libnsl.so.1 
+	libnspr4.so => /lib64/libnspr4.so 
+	libnss3.so => /lib64/libnss3.so 
+	libnssutil3.so => /lib64/libnssutil3.so 
+	libpcre.so.1 => /lib64/libpcre.so.1 
+	libperl.so => /usr/lib64/perl5/CORE/libperl.so 
+	libplc4.so => /lib64/libplc4.so 
+	libplds4.so => /lib64/libplds4.so 
+	libpthread.so.0 => /lib64/libpthread.so.0 
+	libreplace-samba4.so => /usr/lib64/samba/libreplace-samba4.so 
+	libresolv.so.2 => /lib64/libresolv.so.2 
+	librt.so.1 => /lib64/librt.so.1 
+	libsamba3-util-samba4.so => /usr/lib64/samba/libsamba3-util-samba4.so 
+	libsamba-cluster-support-samba4.so => /usr/lib64/samba/libsamba-cluster-support-samba4.so 
+	libsamba-credentials.so.0 => /lib64/libsamba-credentials.so.0 
+	libsamba-debug-samba4.so => /usr/lib64/samba/libsamba-debug-samba4.so 
+	libsamba-errors.so.1 => /lib64/libsamba-errors.so.1 
+	libsamba-hostconfig.so.0 => /lib64/libsamba-hostconfig.so.0 
+	libsamba-modules-samba4.so => /usr/lib64/samba/libsamba-modules-samba4.so 
+	libsamba-security-samba4.so => /usr/lib64/samba/libsamba-security-samba4.so 
+	libsamba-sockets-samba4.so => /usr/lib64/samba/libsamba-sockets-samba4.so 
+	libsamba-util.so.0 => /lib64/libsamba-util.so.0 
+	libsamdb-common-samba4.so => /usr/lib64/samba/libsamdb-common-samba4.so 
+	libsamdb.so.0 => /lib64/libsamdb.so.0 
+	libsasl2.so.3 => /lib64/libsasl2.so.3 
+	libsecrets3-samba4.so => /usr/lib64/samba/libsecrets3-samba4.so 
+	libselinux.so.1 => /lib64/libselinux.so.1 
+	libserver-id-db-samba4.so => /usr/lib64/samba/libserver-id-db-samba4.so 
+	libserver-role-samba4.so => /usr/lib64/samba/libserver-role-samba4.so 
+	libsmbconf.so.0 => /lib64/libsmbconf.so.0 
+	libsmbd-shim-samba4.so => /usr/lib64/samba/libsmbd-shim-samba4.so 
+	libsmb-transport-samba4.so => /usr/lib64/samba/libsmb-transport-samba4.so 
+	libsmime3.so => /lib64/libsmime3.so 
+	libsocket-blocking-samba4.so => /usr/lib64/samba/libsocket-blocking-samba4.so 
+	libssl3.so => /lib64/libssl3.so 
+	libssl.so.10 => /lib64/libssl.so.10 
+	libstdc++.so.6 => /lib64/libstdc++.so.6 
+	libsys-rw-samba4.so => /usr/lib64/samba/libsys-rw-samba4.so 
+	libsystemd-daemon.so.0 => /lib64/libsystemd-daemon.so.0 
+	libsystemd-journal.so.0 => /lib64/libsystemd-journal.so.0 
+	libtalloc-report-samba4.so => /usr/lib64/samba/libtalloc-report-samba4.so 
+	libtalloc.so.2 => /lib64/libtalloc.so.2 
+	libtdb.so.1 => /lib64/libtdb.so.1 
+	libtdb-wrap-samba4.so => /usr/lib64/samba/libtdb-wrap-samba4.so 
+	libtevent.so.0 => /lib64/libtevent.so.0 
+	libtevent-util.so.0 => /lib64/libtevent-util.so.0 
+	libtime-basic-samba4.so => /usr/lib64/samba/libtime-basic-samba4.so 
+	libtinfo.so.5 => /lib64/libtinfo.so.5 
+	libutil-cmdline-samba4.so => /usr/lib64/samba/libutil-cmdline-samba4.so 
+	libutil-reg-samba4.so => /usr/lib64/samba/libutil-reg-samba4.so 
+	libutil-setid-samba4.so => /usr/lib64/samba/libutil-setid-samba4.so 
+	libutil.so.1 => /lib64/libutil.so.1 
+	libutil-tdb-samba4.so => /usr/lib64/samba/libutil-tdb-samba4.so 
+	libwbclient.so.0 => /lib64/libwbclient.so.0 
+	libwinbind-client-samba4.so => /usr/lib64/samba/libwinbind-client-samba4.so 
+	libwrap.so.0 => /lib64/libwrap.so.0 
+	libz.so.1 => /lib64/libz.so.1 
+	linux-vdso.so.1 =>  
