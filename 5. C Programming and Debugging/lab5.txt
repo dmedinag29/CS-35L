@@ -1,0 +1,172 @@
+1. Command: wget https://web.cs.ucla.edu/classes/fall20/cs35L/assign/coreutils-with-bug.tar.gz
+
+We want to build the old version of coreutils, sos lets download it using wget
+
+
+2. Command: tar -xzvf coreutils-with-bug.tar.gz
+We need to uncompress the tar file coreutils
+
+
+3. Command: mkdir week6
+            cd coreutils-with-bug
+            ./configure --prefix=/u/eng/class/classlte/week6
+            make
+
+We create a temporary directory called week6, we then enter the untared file that we downloaded, we also configure our path to our temporary directory which will create a make file, and finally we run such make file. We notice that this will output an error, which states that a function called futimens is declared twice: 
+
+In file included from utimecmp.c:41:0:
+utimens.h:2:5: error: conflicting types for 'futimens'
+ int futimens (int, char const *, struct timespec const [2]);
+     ^
+In file included from utimecmp.h:25:0,
+                 from utimecmp.c:25:
+/usr/include/sys/stat.h:373:12: note: previous declaration of 'futimens' was here
+ extern int futimens (int __fd, const struct timespec __times[2]) __THROW;
+            ^
+4. Command: wget https://web.cs.ucla.edu/classes/fall20/cs35L/assign/coreutils.diff
+
+We download the patch and will attempt to rebuild coreutils with the patch installed, the command saves such patch as a diff file
+
+
+5. Command: patch -p0 < coreutils.diff
+		  make
+		  make install
+
+We then apply the patch that we just downloaded, we run make again and we see that we do not have any errors this time, and finally we call make install to install coreutilis. It is installed in week6/bin We can see that the patch fixes our issue because the function futimes was changed to coreutilis_futimens, so it no longer interfere with the first function. The patch also changes the name of the function everywhere it is used/called.
+
+
+6. Command: touch -d '1918-11-11 11:00 GMT' /run/user/$(id -u)/stamp-wwi-armistice
+            touch /run/user/$(id -u)/stamp-now
+            sleep 1
+            touch /run/user/$(id -u)/stamp-now1
+            TZ=UTC0 /u/eng/class/classlte/week6/bin/ls -lt --full-time /run/user/$(id -u)/stamp*
+            rm /run/user/$(id -u)/stamp*
+
+
+We now want to reproduce our bug, so we call the commands that were given to us in the lab description, which gives us the following output:
+
+-rw-r--r-- 1 classlte class 0 1918-11-11 11:00:00.000000000 +0000 /run/user/10407/stamp-wwi-armistice
+-rw-r--r-- 1 classlte class 0 2020-11-14 00:06:27.117608966 +0000 /run/user/10407/stamp-now1
+-rw-r--r-- 1 classlte class 0 2020-11-14 00:05:52.099527347 +0000 /run/user/10407/stamp-now
+
+The correct version of this should be outputting newest files first, and we can see that is not the case so we have successfully reproduced our bug.
+
+
+7. Command: touch -d '1918-11-11 11:00 GMT' /run/user/$(id -u)/stamp-wwi-armistice
+            touch /run/user/$(id -u)/stamp-now
+            sleep 1
+            touch /run/user/$(id -u)/stamp-now1
+            gdb ~/week6/bin/ls
+
+We want to see what is wrong with our ls, so lets run all the commands we previously did right up to before we call ls -lt, then we will use gdb on our ls command to see what happens step by step.
+
+
+Command: (gdb) info functions 
+
+We look at the functions that exist in ls, and three stand out as they have compare_time in the name, the functions are: 
+	   compare_atime
+	   compare_ctime
+           compare_mtime
+
+
+Command: (gdb) b compare_atime
+	 (gdb) b compare_ctime
+         (gdb) b compare_mtime
+	 (gdb) r -lt --full-time /run/user/$(id -u)/stamp*
+
+We set breakpoints at these three functions, and then we call ls as we did before within gdb. Our program then stops at compare_mtime, so we can assume that the first two functions are not called within ls and we should probably look inside compare_mtime to see what is wrong. The output this point is below: 
+
+Breakpoint 3, compare_mtime (a=0x617180, b=0x617230) at ls.c:2884
+2884	static int compare_mtime (V a, V b) { return cmp_mtime (a, b, xstrcoll); }
+
+
+Command: (gdb) s
+	 (gdb) list
+
+The s will allow us to step into compare_mtime, the list will allow us to see the next lines within our compare_mtime: 
+
+2880	  int diff = timespec_cmp (get_stat_mtime (&b->stat),
+2881				   get_stat_mtime (&a->stat));
+2882	  return diff ? diff : cmp (a->name, b->name);
+2883	}
+
+We can see that another function is called, called timespec_cmp, lets go ahead and step into it
+
+Command: (gdb) s
+	 (gdb) list
+
+We are now the timespec_cmp function, typing list gives us the following: 
+
+(gdb) s
+timespec_cmp (b=..., a=...) at ../lib/timespec.h:48
+48	  int diff = a.tv_sec - b.tv_sec;
+(gdb) list43	/* Return negative, zero, positive if A < B, A == B, A > B, respectively.
+44	   Assume the nanosecond components are in range, or close to it.  */
+45	static inline int
+46	timespec_cmp (struct timespec a, struct timespec b)
+47	{
+48	  int diff = a.tv_sec - b.tv_sec;
+49	  return diff ? diff : a.tv_nsec - b.tv_nsec;
+50	}
+
+
+We see that we subtract two numbers, which are probably what is used to compare our time. Since we are subtracting two values, maybe there is an issue with overflow that causes our bug. Lets check and see what the diff value is equal to if w keep running our program.
+
+
+Command: (gdb)
+	 (gdb) info locals
+
+The output of these commands is:
+
+(gdb) s
+49	  return diff ? diff : a.tv_nsec - b.tv_nsec;
+(gdb) info locals
+diff = -1613826000
+
+Clearly, we have an overflow issue in this comparison as this value is very strange. So we now know where are bug is, we want to fix the timespec_cmp function. We can also see from the previous (gdb) s, that this function is located in the file timespec.h Lets go head and quit gdb now. (gdb q)
+
+8. Command: cp coreutils-with-bug/lib/timespec.h ~/patch_timespec.h
+            vim patch_timespec.h
+
+We create a copy of the timespec file and save this new copy to our home directory which is called patch_timespec, we then open that file and we will modify the timespec_cmp function to use comparison operators instead of subtraction to avoid any overflow, it will look as follows:
+
+timespec_cmp (struct timespec a, struct timespec b)
+{
+  if (a.tv_nsec == b.tv_nsec)
+        return 0;
+  else if (a.tv_nsec > b.tv_nsec)
+        return 1;
+  else
+        return -1;
+}
+
+9. Command: diff -u coreutils-with-bug/lib/timespec.h ~/patch_timespec.h > lab5.diff
+	    mv lab5.diff ~/coreutils-with-bug
+	    cd coreutils-with-bug
+	    patch -p0 < lab5.diff
+
+
+Will create a diff file which has the difference from our original and our new file, this lab5.diff file will now be used to patch our coreutils. We go ahead and move our file into the same location our coreutils-with-bug directory that we want to patch, then we call the patch command with p0, which means it will not change any paths
+
+10. Command: make
+	     make install
+
+We will now call make which will rebuild our files, and make install will go ahead and install this again in our week6 directory. Now lets repeat step 6 and we see that now our files our outputted in the correct order, with the oldest file being last: 
+
+-rw-r--r-- 1 classlte class 0 2020-11-14 03:29:47.545481037 +0000 /run/user/10407/stamp-now1
+-rw-r--r-- 1 classlte class 0 2020-11-14 03:29:27.275856088 +0000 /run/user/10407/stamp-now
+-rw-r--r-- 1 classlte class 0 1918-11-11 11:00:00.000000000 +0000 /run/user/10407/stamp-wwi-armistice
+
+
+11. Command: cd ~
+             touch -d '1918-11-11 11:00 GMT' stamp-wwi-armistice
+             touch stamp-now
+             sleep 1
+             touch stamp-now1
+             TZ=UTC0 ls -lt --full-time stamp*
+
+We now run the same commands but on our home directory, which lists the file that is from 1918 as a file from 2054 and puts it in the very front. Clearly the coreutils version our home directory has installed is buggy, this may be due from an overflow subtraction error similar to the one that we had. The output is below:
+
+-rw-r--r-- 1 classlte class 0 2054-12-17 17:28:16.000000000 +0000 stamp-wwi-armistice
+-rw-r--r-- 1 classlte class 0 2020-11-14 03:45:45.044524000 +0000 stamp-now1
+-rw-r--r-- 1 classlte class 0 2020-11-14 03:45:21.953405000 +0000 stamp-now
