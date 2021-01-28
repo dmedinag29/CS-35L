@@ -1,0 +1,49 @@
+1. Lets ssh into seas, ssh classlte@lnxsrv06.seas.ucla.edu
+
+
+2. Call gpg2 --gen-key, then fill in the information it asks. 
+		Type of key: (1) RSA and RSA default
+		Kesize: 2048
+		How long should the key be valid: (0) = key does not expire
+		Real Name: Daniel Medina Garate
+		Email: dmedinag@g.ucla.edu
+		Comment: GPG key pair HW2
+		Passphrase: 2020sucks
+
+
+3. Our key pair has been created. Now lets export our public key in ACII format into	              hw-pubkey.asc by calling the command, where --armour converts it into ACII and --export writes our key into the file: 											
+		gpg2 --armor --export dmedinag@g.ucla.edu > hw-pubkey.asc
+
+
+
+4. Now lets create a detached signature by calling the following command (--output puts our output in the sig file, --detach-sig creates the detached signature from our respective key):
+
+		gpg2 --output hw-pubkey.sig --detach-sig hw-pubkey.asc
+
+This will ask us for our passphrase. We will enter it and hit Enter.
+
+
+5. Lets now verify that our signature is good by calling the command: 
+
+		gpg2 --verify hw-pubkey.sig hw-pubkey.asc
+
+Our signature is then good, as the following it outputted: 
+
+gpg: Signature made Sun 18 Oct 2020 08:51:45 PM PDT using RSA key ID 270EFB97
+gpg: Good signature from "Daniel Medina Garate (GPG key pair HW2) <dmedinag@g.ucla.edu>"
+
+
+
+-----------------------------------------------------------------------------------------------
+
+Questions:
+
+1. Our network would still be secure if others were observing all the bytes going across the network, since all of the data is sent using asymmetric encryptions. It is encrypted using the receivers public key, which can only be decrypted with the private key that is not transmitted through the network. Once the connection is authenticated our data goes through our network through symmetric encryptions, so our network is still secure since our private key remains private. 
+	(1) If others were to obtain our keystrokes, they would be able to get our log in information, access the files on our server, and even obtain the passphrase to our key. For the most part, out network is still secure, since our key was created from a difficult mathematical algorithm that is hard to reverse engineer. You still need the private key from the receiver or the sender to decrypt the information, and these private keys are only located on the machines, so the hackers would still not be able to decrypt the data.
+	(2) If the hackers had access to the USB, then they would have access to all the information, including the keys and their associated information. Now if the key is protected by the passphrase, then the hackers would not be able to access the key and the connection is secure. If it is not passphrase protected or the hacker knows the passphrase, then the hacker would be able to decrypt messages on the network that are sent to me using my private key on the USB. So our connection in this instance is not very secure.
+
+2. The --verify command simply checks if the signature matches the decryption of the sender's public key, not who created the file. 
+
+Suppose the files are accessed by the hacker, the hacker can then modify the public key, create a detached signature for it from their personal private key, and send their own public key included in the modified file with this new signature. Running this command will return that it is a good signature as the signature will match with the hackers new public key.
+
+One method of fixing this is by have a third party check if such files and signatures received were indeed sent from the sender, but this would rely on having a secure third party along with a secure connection to it as well.

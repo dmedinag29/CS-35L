@@ -1,0 +1,68 @@
+For this assignment we will let lnxsrv06 be the client side and lnxsrv07 be the server side.
+
+
+1.We will sign into our client side by entering the following: ssh username@lnxsrv06.seas.ucla.edu
+
+
+2. Typing ssh-agent in our terminal will give us information on our private keys
+
+
+3. Calling the command ssh-keygen, will generate a key. Our terminal will ask us where we would like to save our key, it automatically suggests /u/eng/class/classlte/ .ssh/id_rsa
+
+
+4. Let's save our newly generated key here by pressing enter, this creates such directory that was suggested above. Our terminal will now ask us for a passphrase. I chose to not choose one so I simply hit Enter. It asks to verify our passphrase, we hit Enter again.
+
+Our terminal now states:
+
+Your identification has been saved in /u/eng/class/classlte/.ssh/id_rsa.
+Your public key has been saved in /u/eng/class/classlte/.ssh/id_rsa.pub.
+
+It also states our key fingerprint below. We now have created both private and public keys.
+
+
+5. Now lets call eval $(ssh-agent) to examine our ssh-agent variable. Now call ssh-add to add our private key to ssh-agent. We get the following result:
+
+Identity added: /u/eng/class/classlte/.ssh/id_rsa (/u/eng/class/classlte/.ssh/id_rsa)
+
+
+6. We can now call ssh-copy-id classlte@lnxsrv07.seas.ucla.edu, which installs our key and makes sure its the only connection. It asks for our password, similar to the first step in the lab. Once we do this we get the following:
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'classlte@lnxsrv07.seas.ucla.edu'"
+and check to make sure that only the key(s) you wanted were added.
+
+
+7. We can now go into lnxsrv07 by typing: ssh classlte@lnxsrv07.seas.ucla.edu
+We can see that it does not ask us for a password, as it uses our key from our ssh-agent. We can ssh into any server as all servers are on the same machine, so they all have access to our key. 
+
+
+
+Multi-hop SSH:
+
+8. Since we now cam establish an ssh connection to any server on seas without typing any password or phrases, we can multi-hop in a similar manner as well. Typing the following command (we are currently in lnxsrv07): 
+
+ssh -A -t classlte@lnxsrv06.seas.ucla.edu ssh -A -t classlte@lnxsrv07.seas.ucla.edu ssh -A classlte@lnxsrv08.seas.ucla.edu
+
+This will log us into lnxsrv06, -A allows agent forwarding. -t allows us to force a pseudo-tty to be allocated, which enables us to run the command and have a interactive shell session. From then we will log into lnxsrv07, and from their to lnxsrv08. 
+
+
+9. We can verify our result by typing exit. This returns the following (this returns us to lnxsrv07): 
+
+Goodbye.
+Connection to lnxsrv08.seas.ucla.edu closed.
+Connection to lnxsrv07.seas.ucla.edu closed.
+Connection to lnxsrv06.seas.ucla.edu closed.
+
+
+Port-forwarding: 
+
+10. We will download Xquartz, which enables X11 forwarding on Mac OS. After installing we will open the application and go to the so called xterm window
+
+11. Lets log into a server, lnxsrv10, but using the -X command to enable port-forwarding:
+
+ssh -X classlte@lnxsrv10.seas.ucla.edu
+
+
+12. Now typing the command xeyes, lets hit enter. This will open a new window with eyes that follow our mouse cursor. 
+
